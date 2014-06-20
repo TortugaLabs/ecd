@@ -1,6 +1,9 @@
 #!/bin/bash
 # $Id: cd.sh,v 1.7 2003/10/28 23:30:40 mdelliot Exp $
 
+# Do not enable this if the shell is not full blown bash...
+[ $0 = /bin/sh ] && return
+
 # Possible options:
 #  -v verbose listing of steps performed
 #  -l list recent dirs (select statment to go there)
@@ -15,13 +18,33 @@
 
 declare -a _dirstack
 _dirstack=($HOME)
-echo "_dirstack array set to ${_dirstack[*]}"
+tty -s 0<&2 
+if [ $? -eq 0 ] ; then
+  # We do this so that ssh processes like sftp and svnserve don't mess up!
+  echo "_dirstack array set to ${_dirstack[*]}"
+fi
+
+## Fix the comm command
+#if [ $(rpm -q coreutils --qf '%{version}\n' | sed 's/\..*$//') -lt 7 ] ; then
+#  COMM="comm"
+#else
+#  COMM="comm --nocheck-order"
+#fi
+
+
 
 _cd_dbg() { (( $debug )) && _cd_msg "debug: $@"; }
 _cd_vbs() { (( $verbose )) && _cd_msg "$@" 1>&2; }
 _cd_msg() { echo -e "cd: $@" 1>&2; }
 
-_cd_cleanup() { OPTERR=1 OPTIND=1; }
+_cd_cleanup() {
+  OPTERR=1 OPTIND=1;
+  if [ -z "$oldtrap" ] ; then
+    trap INT
+  else
+    $oldtrap
+  fi
+}
 
 _cd_misuse() {
    echo "cd: illegal option -- $OPTARG"
@@ -74,6 +97,8 @@ _cd_descend() {
 }
 
 cd() {
+   local OPTIND
+   local oldtrap=`trap -p INT`
    trap '_cd_cleanup; return 2;' INT
 
    # Declare local vars
@@ -167,7 +192,7 @@ cd() {
 
    ## CASE 0: No-op if `cd .' or `cd ' and already in $HOME
    if [ "$orig" = "$new" ]; then
-      _cd_msg "You're already there, silly."
+      _cd_msg "No change"
       _cd_cleanup; return 1;
    fi
 
@@ -176,14 +201,14 @@ cd() {
    orig_list=$(echo $orig | sed -e 's:^/::' -e 's:/:\\n:g')
    new_list=$(echo $new | sed -e 's:^/::' -e 's:/:\\n:g')
 
-   comm_tmp=$(comm -12 <(echo -e "$orig_list") <(echo -e "$new_list"))
+   comm_tmp=$($COMM -12 <(echo -e "$orig_list") <(echo -e "$new_list"))
    common=$(echo $comm_tmp | sed -e 's:^:/:' -e 's: :/:g')
    if [ "$common" = "/" ]; then common=""; fi
 
-   comm_tmp=$(comm -23 <(echo -e "$orig_list") <(echo -e "$new_list"))
+   comm_tmp=$($COMM -23 <(echo -e "$orig_list") <(echo -e "$new_list"))
    orig_ext=$(echo $comm_tmp | sed -e 's: :/:g')
 
-   comm_tmp=$(comm -13 <(echo -e "$orig_list") <(echo -e "$new_list"))
+   comm_tmp=$($COMM -13 <(echo -e "$orig_list") <(echo -e "$new_list"))
    new_ext=$(echo $comm_tmp | sed -e 's: :/:g')
 
    _cd_dbg "common    = $common"
