@@ -1,4 +1,0 @@
-ecd
-===
-
-Enhanced chdir

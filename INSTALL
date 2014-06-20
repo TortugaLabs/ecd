@@ -1,0 +1,8 @@
+INSTALL
+
+1. Move the `cd.sh' file to your `~/bin' (or other directory).
+
+2. Add to your `~/.bashrc':
+     source ~/bin/cd.sh
+
+3. Now the function is live in your environment. Just type `cd' to use.

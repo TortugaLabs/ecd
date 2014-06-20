@@ -1,0 +1,19 @@
+Enhanced cd
+===========
+
+Combine the functinionality of builtin commands cd, pushd, and popd, adding
+some additional features.
+
+Change the current directory to DIR, searching for hidden files named
+`.enterrc' and `.exitrc'. Maintain a menu-driven history list to assist in
+changing to prior directories.
+
+The .enterrc/.exitrc idea is borrowed from Jerry Peek's Power Tools article
+14.14. It expands on this idea by searching all subdirectories of the
+destination directory having an uncommon base.
+
+It is implemented as a shell function to enable .exitrc/.enterrc pairs to
+perform environment-setting tasks, such as setting a prompt or umask or
+variables. As a function, it resides in shell memory and so executes with no
+visible delay. Functions do not fork a subprocess so all executed commands are
+able to affect the current shell.
