@@ -30,7 +30,7 @@ fi
 #else
 #  COMM="comm --nocheck-order"
 #fi
-
+COMM="comm --nocheck-order"
 
 
 _cd_dbg() { (( $debug )) && _cd_msg "debug: $@"; }
