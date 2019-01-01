@@ -96,6 +96,30 @@ _cd_descend() {
    done
 }
 
+_cd_is_in_dirstack() {
+  local i
+  for i in "${_dirstack[@]}"
+  do
+    if [ "$i" = "$1" ] ; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+_cd_pop_from_dirstack() {
+  local new_dir_stack=( "$1" ) i
+  for i in "${_dirstack[@]}"
+  do
+    if [ "$i" = "$1" ] ; then
+      continue
+    fi
+    new_dir_stack+=( "$i" )
+  done
+  _dirstack=( "${new_dir_stack[@]}" )
+}
+
+
 cd() {
    local OPTIND
    local oldtrap=`trap -p INT`
@@ -140,10 +164,10 @@ cd() {
       # FIXME: Maybe add color to this prompt ??
       PS3="Enter your selection: "
       # Choose from dirs on stack, excluding the first dir
-      select d in $(echo ${_dirstack[*]} | sed 's:[^ ]*::') "<<exit>>"; do
+      select d in "${_dirstack[@]}" "<<exit>>"; do
          if [ "$d" = "<<exit>>" ]; then
             _cd_cleanup; let abort=1; break;
-         elif [ $d ]; then
+         elif [ -n "$d" ]; then
             new="$d"; 
             if ! builtin cd "$d"; then _cd_cleanup; return 1; fi
             break; 
@@ -172,13 +196,12 @@ cd() {
    if [ "$new" = "/" ]; then :
    else
       # If already in list move to front and remove later entry
-      if echo "${_dirstack[*]} " | grep -q "$new "; then
+      if _cd_is_in_dirstack "$new" ; then
          _cd_dbg "$new already on stack -- moving to front."
-         _dirstack=($new $( echo "${_dirstack[*]} " | sed "s:$new ::" ))
-
+	 _cd_pop_from_dirstack "$new"
       # Else just add to _dirstack
       else
-         _dirstack=($new ${_dirstack[*]})
+         _dirstack=("$new" "${_dirstack[@]}")
       fi
 
       # Check for length too long
